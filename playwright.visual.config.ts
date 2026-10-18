@@ -15,6 +15,7 @@ export default defineConfig({
     locale: 'en-US',
     timezoneId: 'UTC',
     reducedMotion: 'reduce',
+    launchOptions: { args: ['--disable-lcd-text'] },
     trace: 'retain-on-failure',
   },
   webServer: {

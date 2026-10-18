@@ -35,7 +35,8 @@ SHA. Fresh browser contexts keep saved drafts out of the baselines.
 The screenshot environment uses the lockfile-pinned Playwright Chromium and
 DejaVu Sans / DejaVu Sans Mono through the application's font variables. CI runs
 on `ubuntu-24.04` and explicitly installs `fonts-dejavu-core`. This normalizes
-system font selection without changing production CSS. Other operating systems,
+system font selection without changing production CSS. Chromium LCD text rendering
+is disabled to avoid host-specific colored subpixel fringes. Other operating systems,
 font versions, and browser versions can still render differently. Review any
 runner-specific differences; do not raise tolerances to hide them. Pixel diffs
 have zero allowed differing pixels beyond Playwright's default per-pixel color
