@@ -2,7 +2,7 @@
 
 This explains how real research output replaces the synthetic fixtures without rewriting the UI.
 
-Source status checked on **2026-10-18 (UTC)** at research [`565f4512ed6a38dfc21c83c92babe5b3bed64e24`](https://github.com/Pick-Your-AI/pick-your-ai-research/commit/565f4512ed6a38dfc21c83c92babe5b3bed64e24); see `RESEARCH_MAPPING.md` for the dated merge inventory. T2, T4 and T5 findings and market research have merged, but that does not publish production data or accept every proposal. The website remains on contract **1.0.0**, pinned at `d4bdca479f78439b3b98e7418b37acbaccbaa63c`, with synthetic fixtures and unavailable resource estimates.
+Source status checked on **2026-10-18 (UTC)** at research [`92111483b8d52b1b05152391b2d73e9f59ca2fba`](https://github.com/Pick-Your-AI/pick-your-ai-research/commit/92111483b8d52b1b05152391b2d73e9f59ca2fba); see `RESEARCH_MAPPING.md` for the dated merge inventory. T2, T4 and T5 findings and market research have merged, but that does not publish production data or accept every proposal. The website remains on contract **1.0.0**, pinned at `d4bdca479f78439b3b98e7418b37acbaccbaa63c`, with synthetic fixtures and unavailable resource estimates.
 
 The acceptance gates in [website #15](https://github.com/Pick-Your-AI/pickyour.ai/issues/15), [#16](https://github.com/Pick-Your-AI/pickyour.ai/issues/16), [#17](https://github.com/Pick-Your-AI/pickyour.ai/issues/17) and [#18](https://github.com/Pick-Your-AI/pickyour.ai/issues/18) remain in force. This refresh changes documentation only.
 
@@ -100,10 +100,12 @@ The endpoints the UI needs all exist in openapi v1, except these gaps. Each need
 
 ## 8. Research decisions still requiring integration or owner disposition
 
-- The staleness window ([#41](https://github.com/Pick-Your-AI/pick-your-ai-research/issues/41)). The site uses a provisional 30 days.
+- Freshness policy ([#41](https://github.com/Pick-Your-AI/pick-your-ai-research/issues/41)): [merged PR #127](https://github.com/Pick-Your-AI/pick-your-ai-research/pull/127) and its [scoped T4 receipt](https://github.com/Pick-Your-AI/pick-your-ai-research/issues/41#issuecomment-6242626857) adopt no TTL. Pinned facts do not expire by age; hosted current-state facts use capture-date versions and retained snapshots. A newer snapshot alone does not invalidate a build. The website now displays capture dates without age-based freshness claims; the 30-day preview warning at `dc66a9e` is historical. Item revision mismatches, missing items, build schema mismatches and explicit price validity remain separate checks; price-specific refresh/invalidation policy remains open.
 - The usage model for quotes, plus default currency and region ([#39](https://github.com/Pick-Your-AI/pick-your-ai-research/issues/39)). The site's preview estimator is provisional.
 - Sharing and privacy semantics for saved builds ([#42](https://github.com/Pick-Your-AI/pick-your-ai-research/issues/42), blocked by [#40](https://github.com/Pick-Your-AI/pick-your-ai-research/issues/40)). The site's share links are a local-only preview.
 - The merged memory record (PR [#72](https://github.com/Pick-Your-AI/pick-your-ai-research/pull/72)) documents capability-evidence gaps in `rule.memory.framework.compatibility`; policy changes still require a reviewed contract version.
 - Whether the deployment mode is set per build or per component, and how hybrid mode is represented ([#3](https://github.com/Pick-Your-AI/pick-your-ai-research/issues/3)).
 
 The merged schema record (PR [#126](https://github.com/Pick-Your-AI/pick-your-ai-research/pull/126)) explicitly leaves frozen v1 unchanged. Its next-version proposals do not unblock these gaps by themselves.
+
+Before real-data intake, apply the scoped evidence and per-source rights gates in `RESEARCH_MAPPING.md`: source-checked without independent support maps to `unverified`, and new `verified` claims require linked independent support. Missing rights-table rows do not authorize automated collection, display or redistribution. Preserve source dates and selected snapshots; do not silently convert a new catalog revision into expiry of existing build evidence. Neither these receipts nor merged research authorize enabling production providers.
