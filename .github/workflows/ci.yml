@@ -134,10 +134,50 @@ jobs:
         with:
           fail-on-severity: high
 
+  visual-lighthouse:
+    name: visual baselines and lighthouse budget
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-jammy
+      options: --ipc=host
+    env:
+      # Same image, arch, locale, and zone the baselines were shot in.
+      # Host runner fonts are not used for the comparison.
+      PYAI_VISUAL_RUNNER: playwright-jammy-1.64.1
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+      TZ: America/Los_Angeles
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: npm ci
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site-dist
+          path: dist/
+      - name: Screenshot baselines
+        run: npx playwright test tests/e2e/visual.spec.ts --project=desktop-chromium
+      - name: Lighthouse budget (local assert, no upload)
+        run: npm run test:lighthouse
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: visual-lighthouse-report
+          path: |
+            playwright-report/
+            test-results/
+            .lighthouseci/
+          if-no-files-found: ignore
+          retention-days: 7
+
   ci-required:
     name: ci-required
     if: always()
-    needs: [quality, unit, build, e2e, audit, dependency-review]
+    needs: [quality, unit, build, e2e, visual-lighthouse, audit, dependency-review]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

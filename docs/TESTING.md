@@ -11,6 +11,8 @@
 | Browser smoke + a11y                 | Playwright + axe                           | `tests/e2e/smoke.spec.ts`                            | Every route renders an h1, the demo banner and the build SHA, with no page errors and no axe violations, on desktop 1440 px and Pixel 7. Flows covered: starter → mode switch → fail + invalidation → export → persistence → dark mode; selection buckets; share-link round trip; mobile cards                                                 |
 | Build contract                       | `scripts/check-dist.mjs`                   | CI `build` job                                       | `version.json` shape and commit, hashed assets                                                                                                                                                                                                                                                                                                 |
 | Dependencies                         | `npm audit`, dependency review             | CI `audit`, `dependency-review`                      | No high-severity production vulnerabilities                                                                                                                                                                                                                                                                                                    |
+| Visual regression                    | Playwright screenshots                     | `tests/e2e/visual.spec.ts` (+ committed baselines)   | `/`, `/builder` and `/catalog/model` match their baselines in light and dark at 1440×900. Compares run only in the pinned `mcr.microsoft.com/playwright` CI image (`PYAI_VISUAL_RUNNER`), so runner fonts are never compared; elsewhere the spec skips                                                                                         |
+| Lighthouse budget                    | Lighthouse CI (local assert, no upload)    | `lighthouserc.cjs`, `scripts/lighthouse-budget.mjs`  | CI fails unless the median of 3 runs is performance ≥ 90 and accessibility = 100 on `/`, `/builder` and `/catalog/model`                                                                                                                                                                                                                       |
 | Live site                            | Operations                                 | `tests/e2e-live/**`, `scripts/deploy/verify-live.sh` | Owned by operations                                                                                                                                                                                                                                                                                                                            |
 
 Run locally:
@@ -20,12 +22,13 @@ npm run format:check && npm run lint && npm run typecheck
 npm run contracts:verify
 npm test
 npm run build && npm run test:e2e
+npm run test:lighthouse
 npm run audit
 ```
 
-Not yet automated: visual regression snapshots and Lighthouse budgets.
+The visual spec only compares inside the pinned CI image; on a developer machine it skips, so the baselines are updated on that image with `npx playwright test tests/e2e/visual.spec.ts --update-snapshots`. `npm run test:lighthouse` uses Playwright's Chromium (or `CHROME_PATH`) and writes reports to `.lighthouseci/`.
 
-Manual Lighthouse 12 run on 2026-10-16 against `vite preview` (headless Chromium, mobile emulation with default throttling):
+Historical manual Lighthouse 12 run on 2026-10-16 against `vite preview` (headless Chromium, mobile emulation with default throttling), kept as the baseline the budget was set from:
 
 | Route            | Performance | Accessibility | Best practices | SEO                         | LCP   | CLS   |
 | ---------------- | ----------- | ------------- | -------------- | --------------------------- | ----- | ----- |

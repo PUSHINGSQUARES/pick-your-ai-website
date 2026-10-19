@@ -12,3 +12,4 @@ blob-report/
 *.tsbuildinfo
 .vite/
 _*.mjs
+.lighthouseci/
