@@ -12,7 +12,7 @@ import { useValidatorsReady } from '../app/validators';
 import { decodeShareFragment, importBuild, type ImportResult } from '../domain/share';
 import { useBuilder } from '../app/builder-context';
 import { useData } from '../app/data-context';
-import { useBuildAnalysis, useCatalog } from '../app/queries';
+import { useBuildAnalysis, useCatalog, useRuleset } from '../app/queries';
 import { itemPath } from '../lib/catalog-view';
 import { humanize } from '../lib/schema-fields';
 import { EmptyState, ErrorState, Loading, Notice } from '../components/feedback';
@@ -20,7 +20,7 @@ import { IconQuestion, IconUpload } from '../components/icons';
 import { PageHeader } from '../components/layout';
 import { SyntheticBadge } from '../components/status';
 import { FindingsList } from '../features/builder/FindingsList';
-import { costHeadline } from '../features/builder/analysis';
+import { costHeadline, incompletePresentation } from '../features/builder/analysis';
 import { OverallStrip } from '../features/builder/SummaryPanel';
 
 const PREVIEW_NOTE = 'Shared builds are previews; there is no server-side sharing yet.';
@@ -155,6 +155,7 @@ function SharedPreview({
   filePicker: React.ReactNode;
 }) {
   const catalog = useCatalog();
+  const ruleset = useRuleset();
   const analysis = useBuildAnalysis(build);
   const { startNew } = useBuilder();
   const { mode } = useData();
@@ -235,7 +236,11 @@ function SharedPreview({
         </dl>
       </section>
 
-      <OverallStrip report={analysis.report} current={analysis.reportIsCurrent} />
+      <OverallStrip
+        report={analysis.report}
+        current={analysis.reportIsCurrent}
+        incomplete={incompletePresentation(analysis.report, ruleset.data, build)}
+      />
       {analysis.evaluation.isError ? (
         <ErrorState
           error={analysis.evaluation.error}

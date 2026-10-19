@@ -50,16 +50,18 @@ function SelectionRow({
   report,
   reportIsCurrent,
   affected,
+  incompleteRuleIds,
 }: {
   selection: Selection;
   item: CatalogItem | undefined;
   report: EvaluationReport | undefined;
   reportIsCurrent: boolean;
   affected: boolean;
+  incompleteRuleIds?: ReadonlySet<string>;
 }) {
   const { apply } = useBuilder();
   const [configuring, setConfiguring] = useState(false);
-  const outcome = selectionOutcome(report, selection.id);
+  const outcome = selectionOutcome(report, selection.id, incompleteRuleIds);
   const label = KIND_LABELS[selection.kind];
   const name = item?.name ?? selection.catalog_item_id;
   return (
@@ -183,6 +185,7 @@ function KindRow({
   report,
   reportIsCurrent,
   affectedKinds,
+  incompleteRuleIds,
 }: {
   kind: ComponentKind;
   build: BuildSnapshot;
@@ -191,6 +194,7 @@ function KindRow({
   report: EvaluationReport | undefined;
   reportIsCurrent: boolean;
   affectedKinds: ReadonlySet<ComponentKind>;
+  incompleteRuleIds?: ReadonlySet<string>;
 }) {
   const selections = build.selections.filter((s) => s.kind === kind);
   const def = kindDef(kind);
@@ -218,6 +222,7 @@ function KindRow({
             report={report}
             reportIsCurrent={reportIsCurrent}
             affected={affectedKinds.has(kind)}
+            incompleteRuleIds={incompleteRuleIds}
           />
         ))}
         {selections.length === 0 ? (
@@ -254,6 +259,7 @@ export function BuilderTable({
   report,
   reportIsCurrent,
   affectedKinds,
+  incompleteRuleIds,
 }: {
   build: BuildSnapshot;
   byId: ReadonlyMap<string, CatalogItem>;
@@ -261,6 +267,7 @@ export function BuilderTable({
   report: EvaluationReport | undefined;
   reportIsCurrent: boolean;
   affectedKinds: ReadonlySet<ComponentKind>;
+  incompleteRuleIds?: ReadonlySet<string>;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   return (
@@ -299,6 +306,7 @@ export function BuilderTable({
                     report={report}
                     reportIsCurrent={reportIsCurrent}
                     affectedKinds={affectedKinds}
+                    incompleteRuleIds={incompleteRuleIds}
                   />
                 ))}
               </ul>

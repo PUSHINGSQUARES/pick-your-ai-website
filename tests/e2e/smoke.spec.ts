@@ -106,6 +106,32 @@ test('builder flow: starter → change → invalidation, unknowns, export and da
   await axe(page);
 });
 
+test('partial build presents as Incomplete, not Incompatible (website#31)', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name.startsWith('mobile'), 'desktop table flow');
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open in builder' }).first().click();
+  await expect(page.getByTestId('overall-status')).toContainText(/Compatible|pass/i);
+
+  // Remove two required picks: missing choices are not a conflict.
+  await page
+    .locator('[data-kind="model"]')
+    .getByRole('button', { name: /^Remove/ })
+    .click();
+  await page
+    .locator('[data-kind="context_policy"]')
+    .getByRole('button', { name: /^Remove/ })
+    .click();
+  const strip = page.getByTestId('overall-status');
+  await expect(strip).toContainText('Incomplete');
+  await expect(strip).toContainText('2 of 4 required choices made');
+  await expect(strip).not.toContainText('Incompatible');
+  // Picked rows carry no Fail chip; the finding itself still reports the rule failure.
+  await expect(page.locator('[data-kind="workload"]').getByText('Fail')).toHaveCount(0);
+  await expect(page.getByText('rule.required.foundation').first()).toBeVisible();
+});
+
 test('selection page shows compatibility buckets with text, not colour alone', async ({
   page,
 }, info) => {

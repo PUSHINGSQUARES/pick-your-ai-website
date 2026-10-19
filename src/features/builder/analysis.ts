@@ -1,4 +1,11 @@
-import type { BuildSnapshot, ComponentKind, CostEstimate, EvaluationReport } from '../../contracts';
+import type {
+  BuildSnapshot,
+  ComponentKind,
+  CostEstimate,
+  EvaluationReport,
+  Expression,
+  Ruleset,
+} from '../../contracts';
 import { KIND_LABELS, withArticle } from '../../contracts';
 import type { Coverage } from '../../domain/activation';
 import type { Outcome } from '../../components/status';
@@ -30,15 +37,21 @@ function letterFor(i: number): string {
 export function findingsForSelection(
   report: EvaluationReport | undefined,
   selectionId: string,
+  excludeRuleIds?: ReadonlySet<string>,
 ): Finding[] {
-  return report?.findings.filter((f) => f.selection_ids.includes(selectionId)) ?? [];
+  return (
+    report?.findings.filter(
+      (f) => f.selection_ids.includes(selectionId) && !excludeRuleIds?.has(f.rule_id),
+    ) ?? []
+  );
 }
 
 export function selectionOutcome(
   report: EvaluationReport | undefined,
   selectionId: string,
+  excludeRuleIds?: ReadonlySet<string>,
 ): Outcome | null {
-  const applicable = findingsForSelection(report, selectionId).filter(
+  const applicable = findingsForSelection(report, selectionId, excludeRuleIds).filter(
     (f) => f.outcome !== 'skipped',
   );
   return worstOutcome(applicable.map((f) => f.outcome));
@@ -50,6 +63,65 @@ export function overall(report: EvaluationReport | undefined): Outcome | null {
   if (report.summary.unknown) return 'unknown';
   if (report.summary.passed) return 'pass';
   return 'skipped';
+}
+
+export interface IncompletePresentation {
+  /** Required choices already made (enabled selections among the affected kinds). */
+  made: number;
+  /** Required choices in total (affected kinds of the failing required-presence rules). */
+  total: number;
+  /** Remediation text from the failing required-presence rules, de-duplicated. */
+  remediation: string;
+  /** Rule ids behind the failures — rows suppress their Fail chips for these rules only. */
+  ruleIds: ReadonlySet<string>;
+}
+
+/**
+ * PROVISIONAL inference (website#31, research#40): a failing rule is treated as
+ * "required-presence" when its assertion consists solely of `exists` checks on selection
+ * references. Until the ruleset marks such rules explicitly, the UI labels this as provisional.
+ */
+function isRequiredPresenceAssert(expression: Expression): boolean {
+  const e = expression as Record<string, unknown> & { op: string };
+  if (e.op === 'exists') {
+    const v = e.value as { ref?: { scope?: string } } | undefined;
+    return v?.ref?.scope === 'selection';
+  }
+  if (e.op === 'all') {
+    const args = e.args as Expression[] | undefined;
+    return Boolean(args?.length) && (args ?? []).every(isRequiredPresenceAssert);
+  }
+  return false;
+}
+
+/**
+ * When every failing finding is a required-presence rule whose affected kinds include empty
+ * slots, the build is incomplete rather than incompatible. Returns null otherwise — real
+ * conflicts keep the Incompatible presentation. Contract outcomes are never altered.
+ */
+export function incompletePresentation(
+  report: EvaluationReport | undefined,
+  ruleset: Ruleset | undefined,
+  build: BuildSnapshot | undefined,
+): IncompletePresentation | null {
+  if (!report || !ruleset || !build || !report.summary.failed) return null;
+  const failing = report.findings.filter((f) => f.outcome === 'fail');
+  const ruleById = new Map(ruleset.rules.map((r) => [r.id, r]));
+  const hasEnabled = (kind: string) => build.selections.some((s) => s.kind === kind && s.enabled);
+  const kinds = new Set<string>();
+  const ruleIds = new Set<string>();
+  const remediations: string[] = [];
+  for (const f of failing) {
+    const rule = ruleById.get(f.rule_id);
+    if (!rule || !isRequiredPresenceAssert(rule.assert)) return null;
+    if (!(rule.affected_kinds as string[]).some((k) => !hasEnabled(k))) return null;
+    ruleIds.add(f.rule_id);
+    for (const k of rule.affected_kinds as string[]) kinds.add(k);
+    if (rule.remediation && !remediations.includes(rule.remediation))
+      remediations.push(rule.remediation);
+  }
+  const made = [...kinds].filter(hasEnabled).length;
+  return { made, total: kinds.size, remediation: remediations.join(' '), ruleIds };
 }
 
 export function formatMoney(amount: string, currency: string): string {

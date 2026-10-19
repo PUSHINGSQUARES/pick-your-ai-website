@@ -3,10 +3,11 @@ import { KIND_LABELS } from '../../contracts';
 import { buildContext, coverage as computeCoverage } from '../../domain/activation';
 import { updateObjectives } from '../../domain/build';
 import { useBuilder } from '../../app/builder-context';
-import { useBuildAnalysis, useCatalog } from '../../app/queries';
+import { useBuildAnalysis, useCatalog, useRuleset } from '../../app/queries';
 import { ErrorState, Loading } from '../../components/feedback';
 import { PageHeader } from '../../components/layout';
 import emptyArt from '../../assets/images/builder-empty-480.webp';
+import { incompletePresentation } from './analysis';
 import { BuilderTable } from './BuilderTable';
 import { BuildToolbar } from './BuildToolbar';
 import { FindingsList } from './FindingsList';
@@ -35,8 +36,13 @@ function useAnnouncement(
 export default function BuilderPage() {
   const { draft, ready, lastChange, apply } = useBuilder();
   const catalog = useCatalog();
+  const ruleset = useRuleset();
   const build = draft?.build;
   const analysis = useBuildAnalysis(build);
+  const incomplete = useMemo(
+    () => incompletePresentation(analysis.report, ruleset.data, build),
+    [analysis.report, ruleset.data, build],
+  );
   const ctx = useMemo(
     () => (build ? buildContext(build, catalog.byId) : undefined),
     [build, catalog.byId],
@@ -89,11 +95,16 @@ export default function BuilderPage() {
             cost={analysis.cost}
             costIsCurrent={analysis.costIsCurrent}
             resources={analysis.resources}
+            incomplete={incomplete}
           />
           <div className="card p-4">
             <BuildToolbar key={build.id} build={build} byId={catalog.byId} />
           </div>
-          <OverallStrip report={analysis.report} current={analysis.reportIsCurrent} />
+          <OverallStrip
+            report={analysis.report}
+            current={analysis.reportIsCurrent}
+            incomplete={incomplete}
+          />
           <p className="sr-only" aria-live="polite" role="status">
             {announcement}
           </p>
@@ -157,6 +168,7 @@ export default function BuilderPage() {
             report={analysis.report}
             reportIsCurrent={analysis.reportIsCurrent}
             affectedKinds={affected}
+            incompleteRuleIds={incomplete?.ruleIds}
           />
           <FindingsList report={analysis.report} build={build} byId={catalog.byId} />
         </div>
@@ -171,6 +183,7 @@ export default function BuilderPage() {
           cost={analysis.cost}
           costIsCurrent={analysis.costIsCurrent}
           resources={analysis.resources}
+          incomplete={incomplete}
         />
       </div>
     </>

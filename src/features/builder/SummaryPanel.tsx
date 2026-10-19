@@ -13,20 +13,26 @@ import { buildStaleness } from '../../domain/freshness';
 import type { ResourceEstimateResult } from '../../data/types';
 import { OutcomeBadge } from '../../components/status';
 import { costHeadline, nextAction, overall } from './analysis';
+import type { IncompletePresentation } from './analysis';
 
 export function OverallStrip({
   report,
   current,
+  incomplete,
 }: {
   report: EvaluationReport | undefined;
   current: boolean;
+  incomplete?: IncompletePresentation | null;
 }) {
   const o = overall(report);
   let text = 'Add components to start checking compatibility.';
   let cls = 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-900';
   if (report && o) {
     const { failed, unknown, passed, skipped } = report.summary;
-    if (o === 'fail') {
+    if (o === 'fail' && incomplete) {
+      text = `${incomplete.made} of ${incomplete.total} required choices made. ${incomplete.remediation}`;
+      cls = 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950';
+    } else if (o === 'fail') {
       text = `${failed} failing check${failed === 1 ? '' : 's'}${unknown ? ` and ${unknown} unknown` : ''} — this stack is not compatible as configured.`;
       cls = 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950';
     } else if (o === 'unknown') {
@@ -44,19 +50,29 @@ export function OverallStrip({
     >
       {o ? (
         <OutcomeBadge
-          outcome={o}
+          outcome={o === 'fail' && incomplete ? 'unknown' : o}
           label={
-            o === 'pass'
-              ? 'Compatible (rules pass)'
-              : o === 'fail'
-                ? 'Incompatible'
-                : o === 'unknown'
-                  ? 'Unknowns'
-                  : 'Not evaluated'
+            o === 'fail' && incomplete
+              ? 'Incomplete'
+              : o === 'pass'
+                ? 'Compatible (rules pass)'
+                : o === 'fail'
+                  ? 'Incompatible'
+                  : o === 'unknown'
+                    ? 'Unknowns'
+                    : 'Not evaluated'
           }
         />
       ) : null}
-      <p className="text-sm font-medium">{text}</p>
+      <div className="min-w-0">
+        <p className="text-sm font-medium">{text}</p>
+        {o === 'fail' && incomplete ? (
+          <p className="muted mt-0.5 text-xs">
+            Provisional: incompleteness is inferred from the rule shape until the ruleset marks
+            required-presence rules explicitly (research #40).
+          </p>
+        ) : null}
+      </div>
       {!current && report ? (
         <span className="muted text-xs" role="status">
           Showing revision {report.build_revision} while the new revision is evaluated…
@@ -77,6 +93,7 @@ export function SummaryPanel({
   costIsCurrent,
   resources,
   variant,
+  incomplete,
 }: {
   variant: 'mobile' | 'aside';
   build: BuildSnapshot;
@@ -88,6 +105,7 @@ export function SummaryPanel({
   cost: CostEstimate | undefined;
   costIsCurrent: boolean;
   resources: ResourceEstimateResult | undefined;
+  incomplete?: IncompletePresentation | null;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const o = overall(report);
@@ -245,7 +263,10 @@ export function SummaryPanel({
         >
           <span className="flex items-center gap-2">
             {o ? (
-              <OutcomeBadge outcome={o} />
+              <OutcomeBadge
+                outcome={o === 'fail' && incomplete ? 'unknown' : o}
+                label={o === 'fail' && incomplete ? 'Incomplete' : undefined}
+              />
             ) : (
               <span className="muted text-sm">Not evaluated</span>
             )}

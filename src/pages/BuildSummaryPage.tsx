@@ -11,7 +11,7 @@ import { useValidatorsReady } from '../app/validators';
 import { canExport, exportBuild, exportFileName } from '../domain/share';
 import { useBuilder } from '../app/builder-context';
 import { useData } from '../app/data-context';
-import { useBuildAnalysis, useCatalog } from '../app/queries';
+import { useBuildAnalysis, useCatalog, useRuleset } from '../app/queries';
 import { itemPath } from '../lib/catalog-view';
 import { formatValue, humanize } from '../lib/schema-fields';
 import { EmptyState, ErrorState, Loading, Notice } from '../components/feedback';
@@ -20,7 +20,7 @@ import { PageHeader } from '../components/layout';
 import { SyntheticBadge } from '../components/status';
 import { buildMarkdown, download } from '../features/builder/BuildToolbar';
 import { FindingsList, selectionLabel } from '../features/builder/FindingsList';
-import { costHeadline, formatMoney } from '../features/builder/analysis';
+import { costHeadline, formatMoney, incompletePresentation } from '../features/builder/analysis';
 import { OverallStrip } from '../features/builder/SummaryPanel';
 
 const formatDate = (iso: string) => new Date(iso).toLocaleString();
@@ -30,6 +30,7 @@ export default function BuildSummaryPage() {
   const { draft, ready } = useBuilder();
   const { mode } = useData();
   const catalog = useCatalog();
+  const ruleset = useRuleset();
   const build = draft?.build;
   const analysis = useBuildAnalysis(build);
 
@@ -146,7 +147,11 @@ export default function BuildSummaryPage() {
           </dl>
         </section>
 
-        <OverallStrip report={analysis.report} current={analysis.reportIsCurrent} />
+        <OverallStrip
+          report={analysis.report}
+          current={analysis.reportIsCurrent}
+          incomplete={incompletePresentation(analysis.report, ruleset.data, build)}
+        />
         {analysis.evaluation.isError ? (
           <ErrorState
             error={analysis.evaluation.error}
